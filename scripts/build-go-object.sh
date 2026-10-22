@@ -12,8 +12,10 @@ out=go/samefn/samefn_${goos}_${goarch}.syso
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 case "$goos" in
   darwin)
-    echo '_samefn_*' > "$tmp/exports"
-    # Apple's ld: with -r, the symbols not exported become static.
+    # Apple's ld: with -r, the symbols not exported become static. Rust's unwinding personality
+    # stays external: older Xcode linkers otherwise hide its definition but leave a reference
+    # to it, which the final link reports as undefined.
+    printf '%s\n' '_samefn_*' '_rust_eh_personality' > "$tmp/exports"
     ld -r -arch "$(uname -m)" -platform_version macos 12.0 12.0 -o "$tmp/samefn.o" \
       -force_load "$archive" -exported_symbols_list "$tmp/exports"
     strip -S -o "$out" "$tmp/samefn.o" ;;
