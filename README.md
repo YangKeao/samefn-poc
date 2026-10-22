@@ -11,8 +11,9 @@ same bits whichever engine evaluates it and on whichever CPU. Tracking issue:
 | Path | What |
 | --- | --- |
 | `src/lib.rs` | Rust API (`samefn::sin::v1`, `batch_v1`, `batch_v1_in_place`) and the C ABI |
-| `include/samefn.h` | C interface: `samefn_sin_v1`, `samefn_sin_batch_v1`, `samefn_max_version`, `samefn_build_info` |
-| `go/samefn` | Go package (`SinV1`, `SinSliceV1`, `MaxVersion`, `BuildInfo`) over cgo, with prebuilt archives in `lib/<goos>_<goarch>/` |
+| `include/samefn.h` | C interface: `samefn_sin_v1`, `samefn_sin_batch_v1`, `samefn_max_version`, `samefn_build_info`; a copy sits next to the Go package |
+| `go/samefn` | Go package (`SinV1`, `SinSliceV1`, `MaxVersion`, `BuildInfo`) over cgo, with one prebuilt object per platform, `samefn_<goos>_<goarch>.syso` |
+| `go/samefn/lib/<goos>_<goarch>` | The static archives, for C and C++ users |
 | `third_party/core-math` | CORE-MATH's `sin.c`, vendored unmodified, pinned in `PIN` |
 | `corpus/sin_v1.tsv` | Frozen outputs of `sin` version 1 for 10,000 inputs, as bit patterns |
 
@@ -22,8 +23,11 @@ How each engine uses it:
   `samefn::sin::v1` directly. No foreign-function boundary.
 - **TiFlash (C++)** links the static archive and calls `samefn_sin_batch_v1` once per column.
 - **TiDB (Go)** imports `github.com/mjonss/samefn-poc/go/samefn`: `SinV1` for row evaluation,
-  `SinSliceV1` once per chunk for vectorized evaluation. Without cgo the package compiles but
-  panics if called; it never falls back to Go's `math.Sin`.
+  `SinSliceV1` once per chunk for vectorized evaluation. The code is a prebuilt object per
+  platform, `samefn_<goos>_<goarch>.syso`, which `go build` and Bazel's rules_go both link by
+  the platform in its name, with no link flag pointing at a path; Gazelle needs no hand-written
+  rules for it. Without cgo the package compiles but panics if called; it never falls back to
+  Go's `math.Sin`.
 
 ## Versioning
 
@@ -63,11 +67,11 @@ model; nothing is recompiled at run time.
   separately, so the machine code performs exactly the operations in the source.
 - `csrc/guard.c` fails the build under fast math, which may drop rounding steps.
 
-TiDB and TiFlash link the prebuilt archive. TiKV compiles the crate in its own build, with its
-own C compiler but this crate's `build.rs` flags (the `cc` crate also passes on any x86
-`-C target-feature` from TiKV's `RUSTFLAGS`). Correct rounding gives every input exactly one
-right answer, so all these builds compute the same bits although their machine code differs;
-tested with Apple clang and GCC 11.5.
+TiDB and TiFlash link prebuilt code, TiDB the object and TiFlash the archive. TiKV compiles the
+crate in its own build, with its own C compiler but this crate's `build.rs` flags (the `cc`
+crate also passes on any x86 `-C target-feature` from TiKV's `RUSTFLAGS`). Correct rounding
+gives every input exactly one right answer, so all these builds compute the same bits although
+their machine code differs; tested with Apple clang and GCC 11.5.
 
 Faster code for newer CPUs, such as `-march=x86-64-v3` with FMA and AVX2 inline, is a flag
 change in `build.rs` with the same results, but that build would not run on older x86 CPUs.
@@ -89,15 +93,16 @@ one at run time keeps it portable; the PoC does not.
 ```sh
 cargo test --release              # Rust API against the corpus
 ./scripts/check-c.sh              # C interface against the corpus
-./scripts/build-archive.sh        # archive for this host, into go/samefn/lib/<goos>_<goarch>/
+./scripts/build-archive.sh        # archive and Go object for this host (go/samefn/lib/..., go/samefn/*.syso)
 go test ./go/samefn/              # Go package against the corpus
 ./scripts/crosscheck-mpfr.sh      # against MPFR (needs MPFR and GMP)
 ```
 
-Committed archives: `darwin_arm64` (M3), `linux_amd64` (Rocky 9 on an i7-13700) and
-`linux_arm64` (Rocky 9 in an arm64 Linux VM on the M3), all three tested there against the
-corpus. `darwin_amd64` is missing. CI builds and tests Linux x86_64, Linux arm64 and macOS
-arm64.
+Committed archives, each with the Go object made from it (`scripts/build-go-object.sh`):
+`darwin_arm64` (M3), `linux_amd64` (Rocky 9 on an i7-13700) and `linux_arm64` (Rocky 9 in an
+arm64 Linux VM on the M3), all three tested there against the corpus. `darwin_amd64` is missing;
+the Go package fails to compile there with a clear error. CI builds and tests Linux x86_64,
+Linux arm64 and macOS arm64.
 
 ## Status
 

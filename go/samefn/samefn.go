@@ -1,7 +1,8 @@
 //go:build cgo
 
 // Package samefn calls samefn's versioned, correctly rounded functions, the same machine
-// code TiKV and TiFlash run, through cgo and a prebuilt static archive (lib/<goos>_<goarch>).
+// code TiKV and TiFlash run, through cgo. The code comes prebuilt, one object per platform
+// (samefn_<goos>_<goarch>.syso), which Go and Bazel's rules_go link automatically.
 //
 // Each version of a function is its own entry point and never changes; callers pick the
 // version explicitly. The functions compute values only: NULL handling, domain checks,
@@ -9,7 +10,6 @@
 // the contract. Do not combine results with float arithmetic Go could fuse into an FMA.
 package samefn
 
-// #cgo CFLAGS: -I${SRCDIR}/include
 // #include <stdlib.h>
 // #include "samefn.h"
 import "C"

@@ -1,7 +1,7 @@
 #!/bin/sh
-# Builds the static archive for this host and puts it where the Go package links it:
-# go/samefn/lib/<goos>_<goarch>/libsamefn.a. Prints the native libraries a C or Go link of
-# the archive needs.
+# Builds the static archive for this host into go/samefn/lib/<goos>_<goarch>/libsamefn.a (for C
+# and C++ users), then the Go package's object from it (scripts/build-go-object.sh). Prints the
+# native libraries a link of the archive needs.
 set -eu
 cd "$(dirname "$0")/.."
 goos=$(go env GOOS); goarch=$(go env GOARCH)
@@ -16,3 +16,4 @@ case "$goos" in
   *) strip --strip-debug "$out/libsamefn.a" ;;
 esac
 ls -l "$out/libsamefn.a"
+./scripts/build-go-object.sh
