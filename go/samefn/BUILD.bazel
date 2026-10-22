@@ -1,0 +1,52 @@
+# Gazelle regenerates this file when a module depending on samefn-poc builds with Bazel
+# (go_repository), merging into what is here. It does not pick up .syso files, so they are
+# listed and marked "# keep"; rules_go links the one whose name matches the target platform.
+# There is deliberately no BUILD file at the repository root: with one, go_repository would
+# not run Gazelle at all.
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "samefn",
+    srcs = [
+        "link_darwin.go",
+        "link_linux.go",
+        "nocgo.go",
+        "samefn.go",
+        "samefn.h",
+        "samefn_darwin_arm64.syso",  # keep
+        "samefn_linux_amd64.syso",  # keep
+        "samefn_linux_arm64.syso",  # keep
+        "unsupported.go",
+    ],
+    cgo = True,
+    clinkopts = select({
+        "@io_bazel_rules_go//go/platform:android": [
+            "-lgcc_s -lutil -lrt -lpthread -lm -ldl -lc",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "-lm",
+        ],
+        "@io_bazel_rules_go//go/platform:ios": [
+            "-lm",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "-lgcc_s -lutil -lrt -lpthread -lm -ldl -lc",
+        ],
+        "//conditions:default": [],
+    }),
+    importpath = "github.com/mjonss/samefn-poc/go/samefn",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":samefn",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "samefn_test",
+    srcs = ["samefn_test.go"],
+    embed = [":samefn"],
+)
