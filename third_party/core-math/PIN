@@ -1,0 +1,9 @@
+# CORE-MATH, vendored unmodified. Version 1 of samefn's sin is this file; it never changes.
+# Re-fetch and verify with scripts/vendor-core-math.sh.
+url=https://gitlab.inria.fr/core-math/core-math.git
+commit=0ce0cbc15935e24c656280e5a46c34e89f301b7a
+commit_date=2026-10-20
+file=src/binary64/sin/sin.c
+file_last_changed_in=a6509c5bee5e66e56d9e474e2996ac3c379fed0c (2026-10-08)
+file_sha256=cd772a06d75d1bb8bb4374847065acfab28d5a06c7fb81be3b36127f65d8b1c2
+license=MIT

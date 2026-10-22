@@ -1,0 +1,56 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  pin:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vendored CORE-MATH is the pinned upstream file
+        run: ./scripts/vendor-core-math.sh
+      - name: Frozen corpus is unchanged
+        run: sha256sum -c corpus/SHA256SUMS
+      - name: Go package header matches include/samefn.h
+        run: cmp include/samefn.h go/samefn/include/samefn.h
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - name: Rust API against the corpus
+        run: cargo test --release
+      - name: C interface against the corpus
+        run: ./scripts/check-c.sh
+      - name: Go package with the committed archive
+        run: |
+          if [ -f "go/samefn/lib/$(go env GOOS)_$(go env GOARCH)/libsamefn.a" ]; then
+            go test -count=1 ./go/samefn/
+          else
+            echo "no committed archive for $(go env GOOS)/$(go env GOARCH)"
+          fi
+      - name: Go package with a freshly built archive
+        run: |
+          ./scripts/build-archive.sh
+          go test -count=1 ./go/samefn/
+          CGO_ENABLED=0 go build ./go/...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libsamefn-${{ matrix.os }}
+          path: go/samefn/lib
+
+  mpfr:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y libmpfr-dev
+      - name: sin v1 against MPFR on all upstream hard cases and 10M random inputs
+        run: ./scripts/crosscheck-mpfr.sh 10000000
