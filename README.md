@@ -94,8 +94,10 @@ go test ./go/samefn/              # Go package against the corpus
 ./scripts/crosscheck-mpfr.sh      # against MPFR (needs MPFR and GMP)
 ```
 
-Committed archives: `darwin_arm64` and `linux_amd64`. CI builds and tests Linux x86_64,
-Linux arm64 and macOS arm64.
+Committed archives: `darwin_arm64` (M3), `linux_amd64` (Rocky 9 on an i7-13700) and
+`linux_arm64` (Rocky 9 in an arm64 Linux VM on the M3), all three tested there against the
+corpus. `darwin_amd64` is missing. CI builds and tests Linux x86_64, Linux arm64 and macOS
+arm64.
 
 ## Status
 
