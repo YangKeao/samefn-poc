@@ -88,6 +88,41 @@ one at run time keeps it portable; the PoC does not.
 - **Corpus, through all three interfaces** (Rust, C scalar and in-place batch, Go scalar and
   slice): 0 differences on macOS arm64 (Apple clang) and Linux x86_64 (GCC 11.5).
 
+## Cluster results
+
+On lellen (Intel i7-13700, Rocky Linux 9.8): a tiup playground with one TiDB, PD, TiKV and
+TiFlash, and 100,000 rows of generated doubles: `x` uniform in [-10, 10], `xl` = ±10^u with u
+uniform in [-1, 12], `p` = 10^u with u uniform in [-3, 3]. Each expression is evaluated by TiDB,
+pushed down to TiKV, and pushed down to TiFlash; EXPLAIN confirms which engine evaluated it,
+and the results are compared as exact bits. The harness comes from an earlier, private PoC and
+is not in this repository yet.
+
+- **Before:** stock nightly TiDB, TiKV, PD and TiFlash of 2026-10-07.
+- **After:** [tidb-samefn-poc](https://github.com/mjonss/tidb/tree/tidb-samefn-poc),
+  [tikv-samefn-poc](https://github.com/mjonss/tikv/tree/tikv-samefn-poc) and
+  [tiflash-samefn-poc](https://github.com/mjonss/tiflash/tree/tiflash-samefn-poc), with the
+  same nightly PD.
+- Between that nightly and the commits the branches start from, no engine's SIN code changed,
+  so the difference below is samefn alone.
+
+Rows that differ, of 100,000:
+
+| Expression | Engines | Before | After |
+| --- | --- | --- | --- |
+| `SIN(x)` | TiDB vs TiKV | 24,695 (1 ULP) | **0** |
+| `SIN(x)` | TiDB vs TiFlash, TiKV vs TiFlash | not pushed down | **0** |
+| `SIN(xl)` | TiDB vs TiKV | 28,673 (up to 1,347 ULP) | **0** |
+| `SIN(xl)` | TiDB vs TiFlash, TiKV vs TiFlash | not pushed down | **0** |
+| `COS(x)`, not on samefn | TiDB vs TiKV | 26,890 (1 ULP) | 26,890 (1 ULP) |
+| `POW(p, x)`, not on samefn | TiDB vs TiKV, TiDB vs TiFlash | 61,802 (8 ULP) | 61,802 (8 ULP) |
+
+- TiDB now pushes SIN down to TiFlash (`mpp[tiflash]`), which it did not before.
+- TiDB's own SIN results changed on 24,683 rows: Go's `math.Sin` is not correctly rounded.
+  TiKV's changed on 136 rows (`SIN(xl)`: 173): Rust's `f64::sin` calls the platform libm
+  (glibc 2.34 here), which is almost always correctly rounded. A stock TiFlash, which also
+  calls glibc, differed from samefn on the same 136 and 173 rows.
+- `COS` and `POW` are controls: not on samefn, their differences are unchanged.
+
 ## Build and test
 
 ```sh
@@ -109,10 +144,10 @@ Linux arm64 and macOS arm64.
 | Part | State |
 | --- | --- |
 | Shared library, `sin` v1 and its batch form | done |
-| TiKV branch | not started |
-| TiFlash branch | not started |
-| TiDB branch | not started |
-| Cluster run: TiDB, TiKV and TiFlash give the same bits | not started |
+| TiKV branch | done: [tikv-samefn-poc](https://github.com/mjonss/tikv/tree/tikv-samefn-poc); CI trial in [tikv/tikv#20215](https://github.com/tikv/tikv/pull/20215) (do not merge) |
+| TiFlash branch | done: [tiflash-samefn-poc](https://github.com/mjonss/tiflash/tree/tiflash-samefn-poc); CI trial in [pingcap/tiflash#11144](https://github.com/pingcap/tiflash/pull/11144) (do not merge) |
+| TiDB branch | done: [tidb-samefn-poc](https://github.com/mjonss/tidb/tree/tidb-samefn-poc), also pushes SIN down to TiFlash; CI trial in [pingcap/tidb#72219](https://github.com/pingcap/tidb/pull/72219) (do not merge) |
+| Cluster run: TiDB, TiKV and TiFlash give the same bits | done: 0 differences (above) |
 
 ## License
 
