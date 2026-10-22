@@ -31,8 +31,9 @@ jobs:
         run: ./scripts/check-c.sh
       - name: Go package with the committed object
         run: |
-          if [ -f "go/samefn/samefn_$(go env GOOS)_$(go env GOARCH).syso" ]; then
+          if [ -f "go/samefn/internal/obj/samefn_$(go env GOOS)_$(go env GOARCH).syso" ]; then
             go test -count=1 ./go/samefn/
+            go run ./go/cmd/samefn-info
           else
             echo "no committed object for $(go env GOOS)/$(go env GOARCH)"
           fi
@@ -40,13 +41,15 @@ jobs:
         run: |
           ./scripts/build-archive.sh
           go test -count=1 ./go/samefn/
-          CGO_ENABLED=0 go build ./go/...
+          go run ./go/cmd/samefn-info
+      - name: A program links without cgo (the objects must stay out)
+        run: CGO_ENABLED=0 go build -o samefn-info-nocgo ./go/cmd/samefn-info && ./samefn-info-nocgo
       - uses: actions/upload-artifact@v4
         with:
           name: libsamefn-${{ matrix.os }}
           path: |
             go/samefn/lib
-            go/samefn/*.syso
+            go/samefn/internal/obj/*.syso
 
   mpfr:
     runs-on: ubuntu-24.04

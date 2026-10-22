@@ -2,7 +2,7 @@
 
 package samefn
 
-// The library itself is samefn_darwin_<goarch>.syso; these are the system libraries it needs.
+// The library itself is internal/obj/samefn_darwin_<goarch>.syso; these are the system libraries it needs.
 
 // #cgo LDFLAGS: -lm
 import "C"

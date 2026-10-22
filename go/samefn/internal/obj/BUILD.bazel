@@ -1,0 +1,25 @@
+# Gazelle regenerates this file when a module depending on samefn-poc builds with Bazel
+# (go_repository), merging into what is here. It does not pick up .syso files, so they are
+# listed and marked "# keep"; rules_go links the one whose name matches the target platform.
+# There is deliberately no BUILD file at the repository root: with one, go_repository would
+# not run Gazelle at all.
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "obj",
+    srcs = [
+        "obj.go",
+        "samefn_darwin_arm64.syso",  # keep
+        "samefn_linux_amd64.syso",  # keep
+        "samefn_linux_arm64.syso",  # keep
+    ],
+    importpath = "github.com/mjonss/samefn-poc/go/samefn/internal/obj",
+    visibility = ["//go/samefn:__subpackages__"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":obj",
+    visibility = ["//go/samefn:__subpackages__"],
+)

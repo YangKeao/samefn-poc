@@ -12,7 +12,8 @@ same bits whichever engine evaluates it and on whichever CPU. Tracking issue:
 | --- | --- |
 | `src/lib.rs` | Rust API (`samefn::sin::v1`, `batch_v1`, `batch_v1_in_place`) and the C ABI |
 | `include/samefn.h` | C interface: `samefn_sin_v1`, `samefn_sin_batch_v1`, `samefn_max_version`, `samefn_build_info`; a copy sits next to the Go package |
-| `go/samefn` | Go package (`SinV1`, `SinSliceV1`, `MaxVersion`, `BuildInfo`) over cgo, with one prebuilt object per platform, `samefn_<goos>_<goarch>.syso` |
+| `go/samefn` | Go package (`SinV1`, `SinSliceV1`, `MaxVersion`, `BuildInfo`) over cgo |
+| `go/samefn/internal/obj` | One prebuilt object per platform, `samefn_<goos>_<goarch>.syso`, imported only by the cgo side |
 | `go/samefn/lib/<goos>_<goarch>` | The static archives, for C and C++ users |
 | `third_party/core-math` | CORE-MATH's `sin.c`, vendored unmodified, pinned in `PIN` |
 | `corpus/sin_v1.tsv` | Frozen outputs of `sin` version 1 for 10,000 inputs, as bit patterns |
@@ -24,9 +25,11 @@ How each engine uses it:
 - **TiFlash (C++)** links the static archive and calls `samefn_sin_batch_v1` once per column.
 - **TiDB (Go)** imports `github.com/mjonss/samefn-poc/go/samefn`: `SinV1` for row evaluation,
   `SinSliceV1` once per chunk for vectorized evaluation. The code is a prebuilt object per
-  platform, `samefn_<goos>_<goarch>.syso`, which `go build` and Bazel's rules_go both link by
-  the platform in its name, with no link flag pointing at a path; Gazelle needs no hand-written
-  rules for it. Without cgo the package compiles but panics if called; it never falls back to
+  platform, `internal/obj/samefn_<goos>_<goarch>.syso`, which `go build` and Bazel's rules_go
+  both link by the platform in its name, with no link flag pointing at a path. Two details
+  found in TiDB's CI: Go links a package's `.syso` files even without cgo, so only the cgo side
+  imports `internal/obj`; and Gazelle does not list `.syso` files, so `internal/obj/BUILD.bazel`
+  keeps them. Without cgo the package compiles but panics if called; it never falls back to
   Go's `math.Sin`.
 
 ## Versioning
@@ -128,7 +131,7 @@ Rows that differ, of 100,000:
 ```sh
 cargo test --release              # Rust API against the corpus
 ./scripts/check-c.sh              # C interface against the corpus
-./scripts/build-archive.sh        # archive and Go object for this host (go/samefn/lib/..., go/samefn/*.syso)
+./scripts/build-archive.sh        # archive and Go object for this host (go/samefn/lib/, go/samefn/internal/obj/)
 go test ./go/samefn/              # Go package against the corpus
 ./scripts/crosscheck-mpfr.sh      # against MPFR (needs MPFR and GMP)
 ```

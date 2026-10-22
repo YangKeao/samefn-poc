@@ -1,8 +1,8 @@
 //go:build cgo
 
 // Package samefn calls samefn's versioned, correctly rounded functions, the same machine
-// code TiKV and TiFlash run, through cgo. The code comes prebuilt, one object per platform
-// (samefn_<goos>_<goarch>.syso), which Go and Bazel's rules_go link automatically.
+// code TiKV and TiFlash run, through cgo. The code comes prebuilt, one object per platform in
+// package internal/obj, which Go and Bazel's rules_go link automatically.
 //
 // Each version of a function is its own entry point and never changes; callers pick the
 // version explicitly. The functions compute values only: NULL handling, domain checks,
@@ -14,7 +14,12 @@ package samefn
 // #include "samefn.h"
 import "C"
 
-import "unsafe"
+import (
+	"unsafe"
+
+	// The prebuilt objects; imported only here, by the cgo side.
+	_ "github.com/mjonss/samefn-poc/go/samefn/internal/obj"
+)
 
 // SinV1 returns sin version 1 of x: correctly rounded.
 func SinV1(x float64) float64 { return float64(C.samefn_sin_v1(C.double(x))) }
