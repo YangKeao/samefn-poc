@@ -64,7 +64,7 @@ func TestVersions(t *testing.T) {
 	if v := MaxVersion("sin"); v != 1 {
 		t.Fatalf("MaxVersion(sin) = %d", v)
 	}
-	if v := MaxVersion("cos"); v != 0 {
+	if v := MaxVersion("cos"); v != 1 {
 		t.Fatalf("MaxVersion(cos) = %d", v)
 	}
 	t.Log(BuildInfo())

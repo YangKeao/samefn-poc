@@ -157,3 +157,30 @@ Linux arm64 and macOS arm64.
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
 [MIT license](LICENSE-MIT), at your option. The vendored CORE-MATH file is MIT
 ([third_party/core-math/LICENSE](third_party/core-math/LICENSE)).
+
+## Local shared-math performance experiment
+
+Branch `experiment/shared-math-cgo` adds `cos`, `tan` and `exp` version1, each vendored
+unmodified from the same CORE-MATH commit as SIN. `PIN-cos`, `PIN-tan` and `PIN-exp`
+record the source hashes. Independent MPFR binary64 nearest-even references cover
+100,019 inputs per added function, including subnormals, signed zero, nonfinite
+values, large arguments and EXP overflow/underflow. Rust and Go scalar/batch tests
+read these fixed reference files; SIN's original reference file is unchanged.
+
+The new Go object/archive has been built and tested on **Linux amd64 only**. The
+older committed ARM objects do not contain these new entry points; rebuild on that
+platform before using this experimental branch there. This is an experiment, not
+a new multi-platform release. The Rust crate compiles the vendored C sources for
+its target. SQL NULL/argument conversion/overflow policy remains with each engine.
+
+`IdentityV1` and `IdentitySliceV1` are measurement controls, not SQL functions.
+`go test ./go/samefn -run '^$' -bench BenchmarkSharedMath -benchmem` compares
+native Go, one cgo call per value and one cgo call per chunk without timed
+allocations. `cargo run --release --example math_bench` compares Rust's native
+libm path with the shared crate. Input formulas and iteration counts are in source.
+Do not attribute the changed math kernel's cost to cgo: use the identity control
+and the scalar-versus-batch results separately.
+
+The archive script now stops on a compiler failure instead of copying an older
+archive. The failure was reproduced by supplying an invalid Rust compiler flag;
+the original script returned success, while the corrected script fails.

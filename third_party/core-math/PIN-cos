@@ -1,0 +1,5 @@
+url=https://gitlab.inria.fr/core-math/core-math.git
+commit=0ce0cbc15935e24c656280e5a46c34e89f301b7a
+file=src/binary64/cos/cos.c
+file_sha256=04bffbc8b483c886f78f2c9ab3f2a1ca318dda78ab637a2983a4a9d82374e9d9
+license=MIT

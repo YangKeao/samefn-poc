@@ -49,3 +49,59 @@ func MaxVersion(name string) uint32 {
 
 // BuildInfo describes the linked library, for start-up logs.
 func BuildInfo() string { return C.GoString(C.samefn_build_info()) }
+
+// CosV1 uses the shared version 1 kernel.
+func CosV1(x float64) float64 { return float64(C.samefn_cos_v1(C.double(x))) }
+
+// CosSliceV1 evaluates one chunk per cgo call. Only disjoint or identical slices are supported.
+func CosSliceV1(dst, src []float64) {
+	if len(dst) < len(src) {
+		panic("samefn: dst shorter than src")
+	}
+	if len(src) == 0 {
+		return
+	}
+	C.samefn_cos_batch_v1((*C.double)(unsafe.Pointer(unsafe.SliceData(src))), (*C.double)(unsafe.Pointer(unsafe.SliceData(dst))), C.size_t(len(src)))
+}
+
+// TanV1 uses the shared version 1 kernel.
+func TanV1(x float64) float64 { return float64(C.samefn_tan_v1(C.double(x))) }
+
+// TanSliceV1 evaluates one chunk per cgo call. Only disjoint or identical slices are supported.
+func TanSliceV1(dst, src []float64) {
+	if len(dst) < len(src) {
+		panic("samefn: dst shorter than src")
+	}
+	if len(src) == 0 {
+		return
+	}
+	C.samefn_tan_batch_v1((*C.double)(unsafe.Pointer(unsafe.SliceData(src))), (*C.double)(unsafe.Pointer(unsafe.SliceData(dst))), C.size_t(len(src)))
+}
+
+// ExpV1 uses the shared version 1 kernel.
+func ExpV1(x float64) float64 { return float64(C.samefn_exp_v1(C.double(x))) }
+
+// ExpSliceV1 evaluates one chunk per cgo call. Only disjoint or identical slices are supported.
+func ExpSliceV1(dst, src []float64) {
+	if len(dst) < len(src) {
+		panic("samefn: dst shorter than src")
+	}
+	if len(src) == 0 {
+		return
+	}
+	C.samefn_exp_batch_v1((*C.double)(unsafe.Pointer(unsafe.SliceData(src))), (*C.double)(unsafe.Pointer(unsafe.SliceData(dst))), C.size_t(len(src)))
+}
+
+// IdentityV1 uses the shared version 1 kernel.
+func IdentityV1(x float64) float64 { return float64(C.samefn_identity_v1(C.double(x))) }
+
+// IdentitySliceV1 evaluates one chunk per cgo call. Only disjoint or identical slices are supported.
+func IdentitySliceV1(dst, src []float64) {
+	if len(dst) < len(src) {
+		panic("samefn: dst shorter than src")
+	}
+	if len(src) == 0 {
+		return
+	}
+	C.samefn_identity_batch_v1((*C.double)(unsafe.Pointer(unsafe.SliceData(src))), (*C.double)(unsafe.Pointer(unsafe.SliceData(dst))), C.size_t(len(src)))
+}

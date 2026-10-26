@@ -49,6 +49,6 @@ fn batches_match_corpus() {
 #[test]
 fn versions() {
     assert_eq!(samefn::max_version("sin"), 1);
-    assert_eq!(samefn::max_version("cos"), 0);
+    assert_eq!(samefn::max_version("cos"), 1);
     assert_eq!(unsafe { samefn::samefn_max_version(c"sin".as_ptr()) }, 1);
 }

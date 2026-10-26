@@ -11,3 +11,15 @@ func SinV1(x float64) float64       { panic(errNoCgo) }
 func SinSliceV1(dst, src []float64) { panic(errNoCgo) }
 func MaxVersion(name string) uint32 { return 0 }
 func BuildInfo() string             { return "samefn: built without cgo" }
+
+func CosV1(x float64) float64       { panic(errNoCgo) }
+func CosSliceV1(dst, src []float64) { panic(errNoCgo) }
+
+func TanV1(x float64) float64       { panic(errNoCgo) }
+func TanSliceV1(dst, src []float64) { panic(errNoCgo) }
+
+func ExpV1(x float64) float64       { panic(errNoCgo) }
+func ExpSliceV1(dst, src []float64) { panic(errNoCgo) }
+
+func IdentityV1(x float64) float64       { panic(errNoCgo) }
+func IdentitySliceV1(dst, src []float64) { panic(errNoCgo) }

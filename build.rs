@@ -19,4 +19,20 @@ fn main() {
         .flag_if_supported("-fno-fast-math")
         .warnings(false)
         .compile("samefn_core_math");
+    for name in ["cos", "tan", "exp"] {
+        let file = format!("third_party/core-math/src/binary64/{name}/{name}.c");
+        println!("cargo:rerun-if-changed={file}");
+        cc::Build::new()
+            .file(&file)
+            .file(guard)
+            .define(
+                &format!("cr_{name}"),
+                format!("samefn_core_math_{name}_v1").as_str(),
+            )
+            .flag_if_supported("-std=gnu11")
+            .flag_if_supported("-ffp-contract=off")
+            .flag_if_supported("-fno-fast-math")
+            .warnings(false)
+            .compile(&format!("samefn_core_math_{name}"));
+    }
 }

@@ -17,7 +17,7 @@ extern "C" {
 pub const BUILD_INFO: &str = concat!(
     "samefn-poc ",
     env!("CARGO_PKG_VERSION"),
-    "; sin v1 = CORE-MATH 0ce0cbc15935 src/binary64/sin/sin.c"
+    "; sin/cos/tan/exp v1 = CORE-MATH 0ce0cbc15935"
 );
 
 pub mod sin {
@@ -33,7 +33,10 @@ pub mod sin {
 
     /// `output[i] = v1(input[i])` for every `i < input.len()`.
     pub fn batch_v1(input: &[f64], output: &mut [f64]) {
-        assert!(output.len() >= input.len(), "samefn: output shorter than input");
+        assert!(
+            output.len() >= input.len(),
+            "samefn: output shorter than input"
+        );
         for (o, &x) in output.iter_mut().zip(input) {
             *o = v1(x);
         }
@@ -51,6 +54,7 @@ pub mod sin {
 pub fn max_version(name: &str) -> u32 {
     match name {
         "sin" => sin::MAX_VERSION,
+        "cos" | "tan" | "exp" => 1,
         _ => 0,
     }
 }
@@ -88,8 +92,128 @@ pub extern "C" fn samefn_build_info() -> *const c_char {
     concat!(
         "samefn-poc ",
         env!("CARGO_PKG_VERSION"),
-        "; sin v1 = CORE-MATH 0ce0cbc15935 src/binary64/sin/sin.c\0"
+        "; sin/cos/tan/exp v1 = CORE-MATH 0ce0cbc15935\0"
     )
     .as_ptr()
     .cast()
+}
+
+extern "C" {
+    fn samefn_core_math_cos_v1(x: f64) -> f64;
+}
+/// Versioned correctly rounded cos; SQL NULL and error policy belongs to the caller.
+pub mod cos {
+    pub const MAX_VERSION: u32 = 1;
+    #[inline]
+    pub fn v1(x: f64) -> f64 {
+        unsafe { super::samefn_core_math_cos_v1(x) }
+    }
+    pub fn batch_v1(input: &[f64], output: &mut [f64]) {
+        assert!(output.len() >= input.len());
+        for (o, &x) in output.iter_mut().zip(input) {
+            *o = v1(x);
+        }
+    }
+    pub fn batch_v1_in_place(values: &mut [f64]) {
+        for v in values {
+            *v = v1(*v);
+        }
+    }
+}
+#[no_mangle]
+pub extern "C" fn samefn_cos_v1(x: f64) -> f64 {
+    cos::v1(x)
+}
+/// # Safety
+/// Both buffers are valid for n elements, disjoint or identical, and aligned.
+#[no_mangle]
+pub unsafe extern "C" fn samefn_cos_batch_v1(input: *const f64, output: *mut f64, n: usize) {
+    for i in 0..n {
+        let x = *input.add(i);
+        *output.add(i) = cos::v1(x);
+    }
+}
+extern "C" {
+    fn samefn_core_math_tan_v1(x: f64) -> f64;
+}
+/// Versioned correctly rounded tan; SQL NULL and error policy belongs to the caller.
+pub mod tan {
+    pub const MAX_VERSION: u32 = 1;
+    #[inline]
+    pub fn v1(x: f64) -> f64 {
+        unsafe { super::samefn_core_math_tan_v1(x) }
+    }
+    pub fn batch_v1(input: &[f64], output: &mut [f64]) {
+        assert!(output.len() >= input.len());
+        for (o, &x) in output.iter_mut().zip(input) {
+            *o = v1(x);
+        }
+    }
+    pub fn batch_v1_in_place(values: &mut [f64]) {
+        for v in values {
+            *v = v1(*v);
+        }
+    }
+}
+#[no_mangle]
+pub extern "C" fn samefn_tan_v1(x: f64) -> f64 {
+    tan::v1(x)
+}
+/// # Safety
+/// Both buffers are valid for n elements, disjoint or identical, and aligned.
+#[no_mangle]
+pub unsafe extern "C" fn samefn_tan_batch_v1(input: *const f64, output: *mut f64, n: usize) {
+    for i in 0..n {
+        let x = *input.add(i);
+        *output.add(i) = tan::v1(x);
+    }
+}
+extern "C" {
+    fn samefn_core_math_exp_v1(x: f64) -> f64;
+}
+/// Versioned correctly rounded exp; SQL NULL and error policy belongs to the caller.
+pub mod exp {
+    pub const MAX_VERSION: u32 = 1;
+    #[inline]
+    pub fn v1(x: f64) -> f64 {
+        unsafe { super::samefn_core_math_exp_v1(x) }
+    }
+    pub fn batch_v1(input: &[f64], output: &mut [f64]) {
+        assert!(output.len() >= input.len());
+        for (o, &x) in output.iter_mut().zip(input) {
+            *o = v1(x);
+        }
+    }
+    pub fn batch_v1_in_place(values: &mut [f64]) {
+        for v in values {
+            *v = v1(*v);
+        }
+    }
+}
+#[no_mangle]
+pub extern "C" fn samefn_exp_v1(x: f64) -> f64 {
+    exp::v1(x)
+}
+/// # Safety
+/// Both buffers are valid for n elements, disjoint or identical, and aligned.
+#[no_mangle]
+pub unsafe extern "C" fn samefn_exp_batch_v1(input: *const f64, output: *mut f64, n: usize) {
+    for i in 0..n {
+        let x = *input.add(i);
+        *output.add(i) = exp::v1(x);
+    }
+}
+/// Experimental identity control: measures the same cgo ABI without a math kernel.
+#[no_mangle]
+pub extern "C" fn samefn_identity_v1(x: f64) -> f64 {
+    x
+}
+/// # Safety
+/// Both buffers are valid for n elements, disjoint or identical, and aligned.
+#[no_mangle]
+pub unsafe extern "C" fn samefn_identity_batch_v1(input: *const f64, output: *mut f64, n: usize) {
+    for i in 0..n {
+        let x = *input.add(i);
+        *output.add(i) = x;
+    }
 }

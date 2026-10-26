@@ -1,0 +1,5 @@
+url=https://gitlab.inria.fr/core-math/core-math.git
+commit=0ce0cbc15935e24c656280e5a46c34e89f301b7a
+file=src/binary64/exp/exp.c
+file_sha256=65af7f572ce97327b63700dd76bd6bf753c087fe326c83c7dbbd674ab168a84d
+license=MIT

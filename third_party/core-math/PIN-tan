@@ -1,0 +1,5 @@
+url=https://gitlab.inria.fr/core-math/core-math.git
+commit=0ce0cbc15935e24c656280e5a46c34e89f301b7a
+file=src/binary64/tan/tan.c
+file_sha256=dd662b7af88a86d85e01b88c57f9df4b6019ddfd02120ca381b5ba42283987ae
+license=MIT
